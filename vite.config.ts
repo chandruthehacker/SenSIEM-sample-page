@@ -19,5 +19,5 @@ export default defineConfig(({ mode }) => ({
     },
   },
   // 👇 Important for GitHub Pages
-  base: "/sensiem-sample-page/",
+  base: "/SenSIEM-sample-page/",
 }));
