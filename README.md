@@ -21,37 +21,40 @@ Here’s how it looks in action:
 
 ---
 
-## ✨ Features
-- 🔍 **Search & Filter Logs** – Quickly find log entries by message or type.  
-- 📊 **Log Metadata Viewer** – Inspect detailed metadata like process, PID, IPs, and more.  
-- ⚡ **Mock Data Fallback** – Works even without backend (shows sample logs).  
-- 🔄 **Auto Refresh & Loader** – Refresh logs with smooth loader animation.  
-- 📱 **Responsive UI** – Optimized for desktop and mobile.
+## 🚀 Features
+
+### 🔍 Log Search (Splunk-like)
+- Filter logs by log level, IP address, username, source, and time range
+- Supports smart query syntax and alias matching
+- View full log details in an interactive expandable dialog
+
+### 📊 Dashboards
+- Visual charts for log levels, alerts, suspicious IPs, and sources
+- Auto-refreshing dashboards with drill-down capabilities
+
+### 📁 Logs Viewer
+- Complete view of ingested logs with quick filter chips
+- Supports custom ingestion with dynamic log type detection
+
+### 🚨 Alerts
+- Real-time alerts triggered by detection rules (e.g., brute force, failed logins)
+- Color-coded severity levels with timestamp and log source linkage
+- Alert details dialog with scrollable context
+
+### ⚙️ Settings
+- Configure monitored paths or ingest files manually
+- Manage detection rules, thresholds, and alert frequency
+- Set up notification preferences (Email, Slack, Telegram)
 
 ---
 
-## 🛠️ Tech Stack
-- **React** ⚛️  
-- **TailwindCSS** 🎨  
-- **shadcn/ui + lucide-react icons** 🧩  
-- **Axios** 🌐  
+## 🧠 Built-in Detection Rules
+
+- 🔐 Brute-force login detection
+- 🧑‍💻 Failed login spike alerts
+- 📊 Anomaly detection based on log frequency
+- 📈 Suspicious IP or geo-location monitoring
+
+Rules run continuously and can be fine-tuned per log type, time window, and threshold.
 
 ---
-
-## 📂 Project Setup
-Clone and run locally:
-
-```bash
-# Clone the repo
-git clone https://github.com/your-username/SenSIEM-sample-page.git
-
-# Move into project folder
-cd SenSIEM-sample-page
-
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
-```
-
