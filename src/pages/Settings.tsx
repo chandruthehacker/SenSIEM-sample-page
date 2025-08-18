@@ -37,8 +37,29 @@ import { toast } from "sonner";
 
 import backendConfig from "@/configs/config.json";
 
+const mockConfig = {
+  backendIP: "localhost",
+  backendPort: 8787,
+  apiUrl: "http://localhost:8787/api",
+  logSources: {},
+  notificationSettings: {
+    emailEnabled: true,
+    emailRecipient: "reciever@gmail.com",
+    emailSender: "sender@gmail.com",
+    emailSmtpServer: "server",
+    emailSmtpPort: "587",
+    emailPassword: "",
+    slackEnabled: true,
+    slackWebhookUrl: "",
+    telegramEnabled: true,
+    telegramBotToken: "",
+    telegramChatId: "",
+  },
+};
+
+
 function Settings() {
-  const [config, setConfig] = useState(null);
+  const [config, setConfig] = useState(mockConfig);
   const [originalConfig, setOriginalConfig] = useState(null);
   const [newSourcePath, setNewSourcePath] = useState('');
   const [newSourceType, setNewSourceType] = useState('auto');
@@ -79,11 +100,8 @@ function Settings() {
       setOriginalConfig(fetchedConfig);
       setError(false);
     } catch (error) {
-      console.error("Error fetching all settings:", error);
-      setError(true);
-      setModalTitle("Connection Error");
-      setModalMessage("Failed to fetch settings from backend. Please check your connection.");
-      setShowModal(true);
+      setConfig(mockConfig);
+      setOriginalConfig(mockConfig);
     } finally {
       setLoading(false);
     }

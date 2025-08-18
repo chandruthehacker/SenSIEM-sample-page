@@ -65,25 +65,25 @@ const socialLinks = [
     icon: Globe,
     label: "Portfolio",
     href: "https://chandruthehacker.github.io/",
-    color: "hover:text-primary"
+    color: "hover:text-secondary"
   },
   {
     icon: Github,
     label: "GitHub",
     href: "https://github.com/chandruthehacker",
-    color: "hover:text-primary"
+    color: "hover:text-secondary"
   },
   {
     icon: Instagram,
     label: "Instagram", 
     href: "https://instagram.com/dgl_chandru",
-    color: "hover:text-primary"
+    color: "hover:text-secondary"
   },
   {
     icon: Linkedin,
     label: "LinkedIn",
     href: "https://linkedin.com/in/chandruthehacker",
-    color: "hover:text-blue-400"
+    color: "hover:text-secondary"
   }
 ]
 

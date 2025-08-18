@@ -1,5 +1,18 @@
 {
   "backendIP": "localhost",
   "backendPort": 8787,
-  "apiUrl": "http://localhost:8787/api"
+  "apiUrl": "http://localhost:8787/api",
+  "notificationSettings": {
+    "emailEnabled": false,
+    "emailRecipient": "",
+    "emailSender": "",
+    "emailSmtpServer": "",
+    "emailSmtpPort": "587",
+    "emailPassword": "",
+    "slackEmabled": false,
+    "slackWebhookUrl": "",
+    "telegramEnabled": false,
+    "telegramBotToken": "",
+    "telegramChatId": ""
+  }
 }

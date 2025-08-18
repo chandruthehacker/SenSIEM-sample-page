@@ -32,6 +32,54 @@ import Layout from "@/components/layout/Layout";
 
 import backendConfig from "@/configs/config.json";
 
+const MOCK_LOGS = [
+  {
+    id: 1,
+    timestamp: "2025-08-18 14:35:21",
+    log_level: "ERROR",
+    message: "Failed login attempt for user admin",
+    source: "auth.log",
+    from_host: "server01",
+    host: "myhost",
+    process: "sshd",
+    pid: "4567",
+    username: "admin",
+    src_ip: "192.168.1.15",
+    dest_ip: "10.0.0.5",
+    src_port: "51532",
+    dest_port: "22",
+    action: "denied",
+  },
+  {
+    id: 2,
+    timestamp: "2025-08-18 14:40:09",
+    log_level: "INFO",
+    message: "User john successfully logged in",
+    source: "syslog",
+    from_host: "server02",
+    host: "myhost",
+    process: "login",
+    pid: "7890",
+    username: "john",
+    src_ip: "172.16.0.10",
+    dest_ip: "10.0.0.5",
+    src_port: "53321",
+    dest_port: "443",
+    action: "granted",
+  },
+  {
+    id: 3,
+    timestamp: "2025-08-18 15:00:45",
+    log_level: "WARNING",
+    message: "High CPU usage detected in process apache2",
+    source: "apache",
+    from_host: "web01",
+    host: "myhost",
+    process: "apache2",
+    pid: "3210",
+  },
+];
+
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
@@ -39,8 +87,8 @@ const Search = () => {
     logLevel: "all",
     source: "all",
   });
-  const [filteredResults, setFilteredResults] = useState([]);
-  const [savedSearches, setSavedSearches] = useState([]);
+  const [filteredResults, setFilteredResults] = useState<any[]>([]);
+  const [savedSearches, setSavedSearches] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
@@ -48,56 +96,62 @@ const Search = () => {
   
 
 
-  useEffect(() => {
+   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("savedSearches") || "[]");
     setSavedSearches(saved);
-    handleSearch();
+    handleSearch(); // load mock data initially
   }, []);
 
   const handleSearch = async () => {
     setIsLoading(true);
     setIsRefreshing(true);
 
-    const parsed = parseSearchQuery(searchQuery);
-    const body = {
-      filters, // include your existing filters: dateRange, logLevel, etc.
-      query: parsed,
-    };
+    // 🔹 Instead of calling backend, just use mock data
+    setTimeout(() => {
+      // Apply simple filter mock
+      let results = MOCK_LOGS;
 
-    setTimeout(async () => {
-      try {
-        const response = await fetch(`${backendConfig.apiUrl}/search-logs`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        });
-
-        if (!response.ok) throw new Error("Failed to fetch logs");
-
-        const data = await response.json();
-        setFilteredResults(data.logs || []);
-      } catch (error) {
-        console.error("Search failed:", error);
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+      if (filters.logLevel !== "all") {
+        results = results.filter(
+          (log) => log.log_level.toLowerCase() === filters.logLevel.toLowerCase()
+        );
       }
+
+      if (filters.source !== "all") {
+        results = results.filter(
+          (log) => log.source.toLowerCase() === filters.source.toLowerCase()
+        );
+      }
+
+      if (searchQuery.trim()) {
+        results = results.filter((log) =>
+          log.message.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+
+      setFilteredResults(results);
+      setIsLoading(false);
+      setIsRefreshing(false);
     }, 500);
   };
 
-const highlightText = (text, query) => {
-  if (!query) return text;
-  const parts = text.split(new RegExp(`(${query})`, "gi"));
-  return parts.map((part, i) =>
-    part.toLowerCase() === query.toLowerCase() ? (
-      <span key={i} className="bg-yellow-300 px-1 rounded text-black">{part}</span>
-    ) : (
-      part
-    )
-  );
-};
+
+ const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span
+          key={i}
+          className="bg-yellow-300 px-1 rounded text-black"
+        >
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
 
 
 const handleSaveSearch = () => {
@@ -364,7 +418,7 @@ function parseSearchQuery(query: string) {
               {/* Save Button with Tooltip Error */}
               <div className="relative">
                 {saveError && (
-                  <div className="absolute -top-16 left-1/8 -translate-x-1/2 animate-fade-down rounded">
+                  <div className="absolute -top-14 left-1/8 -translate-x-1/2 animate-fade-down rounded">
                     {/* Error Box */}
                     <div className="text-white bg-red-500 border border-red-600 rounded-md px-4 py-2 text-sm font-medium shadow-md max-w-xs whitespace-nowrap">
                       {saveError}

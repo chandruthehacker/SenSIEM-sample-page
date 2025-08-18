@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { FileText, Search, Filter, Eye, Download, RefreshCw } from "lucide-react";
+import { FileText, Search, Filter, Eye, Download, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from "@/components/layout/Layout";
 
 import backendConfig from "@/configs/config.json";
@@ -26,6 +25,81 @@ interface LogEntry {
   metadata?: Record<string, string | number>;
 }
 
+// --- Add mock logs ---
+const MOCK_LOGS: LogEntry[] = [
+  {
+    id: 1,
+    timestamp: new Date().toISOString(),
+    level: "INFO",
+    message: "System initialized successfully",
+    type: "system",
+    raw_log: "INFO: System initialized successfully",
+    pid: 1234,
+    metadata: {
+      host: "server-01",
+      username: "admin",
+      process: "init",
+      from_host: "127.0.0.1",
+    },
+  },
+  {
+    id: 2,
+    timestamp: new Date().toISOString(),
+    level: "WARNING",
+    message: "Disk space running low on /dev/sda1",
+    type: "storage",
+    raw_log: "WARNING: Disk space running low on /dev/sda1",
+    pid: 4321,
+    metadata: {
+      host: "server-02",
+      process: "disk-monitor",
+      status_code: 507,
+    },
+  },
+  {
+    id: 3,
+    timestamp: new Date().toISOString(),
+    level: "ERROR",
+    message: "Failed to connect to database",
+    type: "database",
+    raw_log: "ERROR: Connection to db.example.com failed",
+    pid: 8765,
+    metadata: {
+      host: "server-db",
+      process: "db-client",
+      action: "connect",
+      user_agent: "psql 14.0",
+    },
+  },
+  {
+    id: 4,
+    timestamp: new Date().toISOString(),
+    level: "CRITICAL",
+    message: "Unauthorized access attempt detected",
+    type: "security",
+    raw_log: "CRITICAL: Unauthorized access attempt detected",
+    metadata: {
+      host: "firewall-01",
+      src_ip: "192.168.1.101",
+      dest_ip: "10.0.0.5",
+      action: "block",
+    },
+  },
+  {
+    id: 5,
+    timestamp: new Date().toISOString(),
+    level: "ALERT",
+    message: "Suspicious email detected with malicious attachment",
+    type: "email",
+    raw_log: "ALERT: Suspicious email detected",
+    metadata: {
+      host: "mail-server",
+      mail_subject: "Urgent: Please review",
+      file_hash: "abcd1234efgh5678",
+    },
+  },
+];
+
 
 const Logs = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,13 +107,20 @@ const Logs = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const itemsPerPage = 100;
 
-  async function fetchLogs() {
-    try {
-      const res = await axios.get(`${backendConfig.apiUrl}/get-logs`);
-      const logsWithMetadata = res.data.logs.map((log) => ({
+async function fetchLogs() {
+  try {
+    const res = await axios.get(`${backendConfig.apiUrl}/get-logs`);
+
+    // If API returns no logs, fallback to mock
+    if (!res.data || !res.data.logs || res.data.logs.length === 0) {
+      console.warn("API returned no logs, using mock data");
+      setLogs(MOCK_LOGS);
+    } else {
+      const logsWithMetadata = res.data.logs.map((log: any) => ({
         ...log,
         level: log.log_level ?? log.level ?? "INFO",
         metadata: {
@@ -59,14 +140,18 @@ const Logs = () => {
           device: log.device,
           mail_subject: log.mail_subject,
           file_hash: log.file_hash,
-          tags: log.tags
+          tags: log.tags,
         },
       }));
       setLogs(logsWithMetadata);
-    } catch (err) {
-      console.error("Failed to fetch logs", err);
     }
+  } catch (err) {
+    console.error("Failed to fetch logs, using mock data", err);
+    setLogs(MOCK_LOGS); // fallback to mock data
+  } finally {
+    setLoading(false); // ✅ stop loader once logs are set
   }
+}
 
   useEffect(() => {
     fetchLogs();
@@ -84,14 +169,16 @@ const Logs = () => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
+      setLoading(true); // 👈 show loader again when refreshing
       await fetchLogs();
-      await new Promise((res) => setTimeout(res, 1000));
+      await new Promise((res) => setTimeout(res, 300));
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  return (
+
+   return (
     <Layout>
       <div className="p-6 space-y-6 animate-fade-in">
         {/* Header */}
@@ -106,13 +193,13 @@ const Logs = () => {
               Export
             </Button>
             <Button variant="outline" size="sm" onClick={handleRefresh}>
-                <RefreshCw
-                  className={`w-4 h-4 mr-2 transition-transform ${
-                    isRefreshing ? "animate-spin" : ""
-                  }`}
-                />
-                Refresh
-              </Button>
+              <RefreshCw
+                className={`w-4 h-4 mr-2 transition-transform ${
+                  isRefreshing ? "animate-spin" : ""
+                }`}
+              />
+              Refresh
+            </Button>
           </div>
         </div>
 
@@ -133,7 +220,6 @@ const Logs = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              {/* Future filters can go here */}
             </div>
           </CardContent>
         </Card>
@@ -152,80 +238,88 @@ const Logs = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {currentLogs.map((log) => (
-                <div
-                  key={log.id ?? `${log.timestamp}-${log.message.slice(0, 20)}`}
-                  className="p-4 rounded-2xl border border-border bg-gradient-to-br from-muted/50 to-background hover:from-primary/10 hover:to-primary/30 transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-md"
-                  onClick={() => setSelectedLog(log)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-4 flex-wrap">
-                        <Badge
-                          className={`text-xs px-3 py-1 rounded-full font-semibold tracking-wide shadow-sm transition-colors duration-300
-                            ${log.level === "ERROR"
-                              ? "bg-red-600 text-white hover:bg-red-700"
-                              : log.level === "WARNING"
-                              ? "bg-yellow-400 text-black hover:bg-yellow-500"
-                              : log.level === "CRITICAL"
-                              ? "bg-purple-600 text-white hover:bg-purple-700"
-                              : log.level === "ALERT"
-                              ? "bg-orange-600 text-white hover:bg-orange-700"
-                              : "bg-green-500 text-black hover:bg-green-600"}`}
-                        >
-                          {log.level}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground font-mono group-hover:text-foreground transition-colors">
-                          {new Date(log.timestamp).toLocaleString()}
-                        </span>
-                        {log.pid && (
-                          <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                            PID: {log.pid}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+                <p className="font-poppins">Loading logs...</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {currentLogs.map((log) => (
+                  <div
+                    key={log.id ?? `${log.timestamp}-${log.message.slice(0, 20)}`}
+                    className="p-4 rounded-2xl border border-border bg-gradient-to-br from-muted/50 to-background hover:from-primary/10 hover:to-primary/30 transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-md"
+                    onClick={() => setSelectedLog(log)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <Badge
+                            className={`text-xs px-3 py-1 rounded-full font-semibold tracking-wide shadow-sm transition-colors duration-300
+                              ${log.level === "ERROR"
+                                ? "bg-red-600 text-white hover:bg-red-700"
+                                : log.level === "WARNING"
+                                ? "bg-yellow-400 text-black hover:bg-yellow-500"
+                                : log.level === "CRITICAL"
+                                ? "bg-purple-600 text-white hover:bg-purple-700"
+                                : log.level === "ALERT"
+                                ? "bg-orange-600 text-white hover:bg-orange-700"
+                                : "bg-green-500 text-black hover:bg-green-600"}`}
+                          >
+                            {log.level}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground font-mono group-hover:text-foreground transition-colors">
+                            {new Date(log.timestamp).toLocaleString()}
                           </span>
-                        )}
-                        <span className="text-xs text-primary group-hover:text-foreground transition-colors">
-                          {log.type}
-                        </span>
-
-                        <span className="text-xs text-primary group-hover:text-foreground transition-colors">
-                          Log ID: {log.id}
-                        </span>
+                          {log.pid && (
+                            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                              PID: {log.pid}
+                            </span>
+                          )}
+                          <span className="text-xs text-primary group-hover:text-foreground transition-colors">
+                            {log.type}
+                          </span>
+                          <span className="text-xs text-primary group-hover:text-foreground transition-colors">
+                            Log ID: {log.id}
+                          </span>
+                        </div>
+                        <p className="text-md font-mono text-foreground group-hover:text-white transition-colors line-clamp-3">
+                          {log.message}
+                        </p>
                       </div>
-                      <p className="text-md font-mono text-foreground group-hover:text-white transition-colors line-clamp-3">
-                        {log.message}
-                      </p>
+                      <Eye className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
-                    <Eye className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                ))}
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-6">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredLogs.length)} of {filteredLogs.length} logs
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredLogs.length)} of {filteredLogs.length} logs
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { BarChart3, PieChart, TrendingUp, AlertTriangle, Activity, Plus, MapPin, HardDrive, Minus, TrendingDown, Globe, RefreshCw } from "lucide-react";
+import { 
+  BarChart3, PieChart, TrendingUp, AlertTriangle, Activity, 
+  Plus, MapPin, HardDrive, Minus, TrendingDown, Globe, RefreshCw 
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/layout/Layout";
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-import backendConfig from "@/configs/config.json";
 
 import {
   PieChart as RechartsPieChart,
@@ -26,24 +27,80 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import axios from "axios";
 
+// 🔹 MOCK DATA for dashboards
+const MOCK_METRICS = {
+  total_logs_today: 12450,
+  total_logs_change: [5, "up"], // +5% increasing
+  active_alerts: 42,
+  alerts_change: [-2, "down"], // -2% decreasing
+  error_rate: 3.2,
+  error_rate_change: [0, "stable"],
+  sources_active: 18,
+  sources_change: [1, "up"],
+};
 
-// const logLevelColors = {
-//   INFO: "#22c55e",
-//   WARNING: "#f59e0b",
-//   ERROR: "#ef4444",
-//   CRITICAL: "#7c3aed",
-//   ALERT: "#f97316"
-// };
+const MOCK_LOG_LEVEL_DATA = [
+  { name: "INFO", value: 5000 },
+  { name: "WARNING", value: 1200 },
+  { name: "ERROR", value: 800 },
+  { name: "CRITICAL", value: 150 },
+  { name: "ALERT", value: 50 },
+];
+
+const MOCK_TIME_SERIES = [
+  { time: "10:00", logs: 200, alerts: 2 },
+  { time: "11:00", logs: 400, alerts: 5 },
+  { time: "12:00", logs: 300, alerts: 3 },
+  { time: "13:00", logs: 500, alerts: 7 },
+  { time: "14:00", logs: 250, alerts: 4 },
+];
+
+const MOCK_TOP_ALERTS = [
+  { alert: "Failed login attempts", count: 120 },
+  { alert: "SQL Injection detected", count: 80 },
+  { alert: "Suspicious file upload", count: 65 },
+];
+
+const MOCK_TOP_IPS = [
+  { ip: "192.168.1.10", count: 300 },
+  { ip: "10.0.0.15", count: 220 },
+  { ip: "172.16.5.5", count: 180 },
+];
+
+const MOCK_GEO_IPS = [
+  { country: "United States", count: 400 },
+  { country: "India", count: 250 },
+  { country: "Germany", count: 120 },
+];
+
+const MOCK_NOISY_SOURCES = [
+  { source: "nginx", count: 600 },
+  { source: "auth.log", count: 450 },
+  { source: "firewall", count: 300 },
+];
+
+const MOCK_SYSTEM_ERRORS = [
+  { error: "Disk space low on /dev/sda1", count: 12 },
+  { error: "Memory leak in apache2", count: 8 },
+  { error: "Kernel panic detected", count: 3 },
+];
+
+const LOG_LEVEL_COLORS: Record<string, string> = {
+  INFO: "#22c55e",      // Tailwind green-600
+  WARNING: "#f59e0b",   // Tailwind amber-500
+  ERROR: "#ef4444",     // Tailwind red-600
+  CRITICAL: "#7c3aed",  // Tailwind violet-600
+  ALERT: "#f97316",     // Tailwind orange-500
+};
+
 
 const Dashboards = () => {
-  // const [dashboardType, setDashboardType] = useState("All Dashboards");
   const [isCreateDashboardModalOpen, setIsCreateDashboardModalOpen] = useState(false);
   const [newDashboardName, setNewDashboardName] = useState("");
   const [newDashboardDescription, setNewDashboardDescription] = useState("");
 
-  const [logLevelData, setLogLevelData] = useState<any[]>([]); // Explicitly type as array
+  const [logLevelData, setLogLevelData] = useState<any[]>([]);
   const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
   const [topAlertsData, setTopAlertsData] = useState<any[]>([]);
   const [topIPsData, setTopIPsData] = useState<any[]>([]);
@@ -54,61 +111,34 @@ const Dashboards = () => {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-const fetchAllDashboardData = useCallback(async () => {
-  setLoading(true);
-  try {
-    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-    const metricsRes = await axios.get(`${backendConfig.apiUrl}/metrics`);
-    setMetricsData(metricsRes.data);
-    await delay(200); // small delay between calls
-
-    const logLevelRes = await axios.get(`${backendConfig.apiUrl}/log-level-distribution`);
-    setLogLevelData(Array.isArray(logLevelRes.data) ? logLevelRes.data : []);
-    await delay(200);
-
-    const timeSeriesRes = await axios.get(`${backendConfig.apiUrl}/time-series-logs-alerts`);
-    setTimeSeriesData(Array.isArray(timeSeriesRes.data) ? timeSeriesRes.data : []);
-    await delay(200);
-
-    const topAlertsRes = await axios.get(`${backendConfig.apiUrl}/top-alerts`);
-    setTopAlertsData(Array.isArray(topAlertsRes.data) ? topAlertsRes.data : []);
-    await delay(200);
-
-    const topIPsRes = await axios.get(`${backendConfig.apiUrl}/ips/top`);
-    setTopIPsData(Array.isArray(topIPsRes.data) ? topIPsRes.data : []);
-    await delay(200);
-
-    const geoIPsRes = await axios.get(`${backendConfig.apiUrl}/geo-suspicious-ips`);
-    setGeoIPsData(Array.isArray(geoIPsRes.data) ? geoIPsRes.data : []);
-    await delay(200);
-
-    const noisySourcesRes = await axios.get(`${backendConfig.apiUrl}/noisy-sources`);
-    setNoisySourcesData(Array.isArray(noisySourcesRes.data) ? noisySourcesRes.data : []);
-    await delay(200);
-
-    const systemErrorsRes = await axios.get(`${backendConfig.apiUrl}/system-errors`);
-    setSystemErrors(Array.isArray(systemErrorsRes.data) ? systemErrorsRes.data : []);
-  } catch (err) {
-    console.error("Error fetching dashboard data:", err);
-    setMetricsData(null);
-    setLogLevelData([]);
-    setTimeSeriesData([]);
-    setTopAlertsData([]);
-    setTopIPsData([]);
-    setGeoIPsData([]);
-    setNoisySourcesData([]);
-    setSystemErrors([]);
-  } finally {
-    setLoading(false);
-  }
-}, []);
-
+  // 🔹 Mock fetch instead of API
+  const fetchAllDashboardData = useCallback(async () => {
+    setLoading(true);
+    try {
+      await new Promise((res) => setTimeout(res, 500)); // fake delay
+      setMetricsData(MOCK_METRICS);
+      setLogLevelData(
+        MOCK_LOG_LEVEL_DATA.map((item) => ({
+          ...item,
+          color: LOG_LEVEL_COLORS[item.name] || "#6b7280",
+        }))
+      );
+      setTimeSeriesData(MOCK_TIME_SERIES);
+      setTopAlertsData(MOCK_TOP_ALERTS);
+      setTopIPsData(MOCK_TOP_IPS);
+      setGeoIPsData(MOCK_GEO_IPS);
+      setNoisySourcesData(MOCK_NOISY_SOURCES);
+      setSystemErrors(MOCK_SYSTEM_ERRORS);
+    } catch (err) {
+      console.error("Error loading mock dashboard data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchAllDashboardData();
   }, [fetchAllDashboardData]);
-
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -122,24 +152,16 @@ const fetchAllDashboardData = useCallback(async () => {
 
   const handleCreateDashboard = async () => {
     if (!newDashboardName.trim()) return;
+    console.log("Creating dashboard:", { name: newDashboardName, description: newDashboardDescription });
 
-    try {
-      console.log("Creating dashboard:", { name: newDashboardName, description: newDashboardDescription });
-      await axios.post(`${backendConfig.apiUrl}/dashboards`, {
-        name: newDashboardName,
-        description: newDashboardDescription
-      });
-      setNewDashboardName("");
-      setNewDashboardDescription("");
-      setIsCreateDashboardModalOpen(false);
-      fetchAllDashboardData();
-    } catch (error) {
-      console.error("Error creating dashboard:", error);
-    }
+    // fake dashboard creation
+    setNewDashboardName("");
+    setNewDashboardDescription("");
+    setIsCreateDashboardModalOpen(false);
   };
 
   const handleDrillDown = (filterType: string, value: string) => {
-    console.log(`Drilling down to Logs page with filter: ${filterType}=${value}`);
+    console.log(`Drill down: ${filterType}=${value}`);
   };
 
   const metrics = [
@@ -161,7 +183,7 @@ const fetchAllDashboardData = useCallback(async () => {
     },
     {
       title: "Error Rate",
-      value:`${metricsData?.error_rate ?? 0}%`,
+      value: `${metricsData?.error_rate ?? 0}%`,
       change: metricsData?.error_rate_change?.[0],
       trend: metricsData?.error_rate_change?.[1],
       icon: TrendingDown,
@@ -174,7 +196,7 @@ const fetchAllDashboardData = useCallback(async () => {
       trend: metricsData?.sources_change?.[1],
       icon: BarChart3,
       color: "text-blue-500",
-    }
+    },
   ];
 
   const renderTrendIcon = (trend: string) => {
@@ -192,9 +214,7 @@ const fetchAllDashboardData = useCallback(async () => {
     return (
       <TooltipProvider>
         <ShadcnTooltip>
-          <TooltipTrigger asChild>
-            {icon}
-          </TooltipTrigger>
+          <TooltipTrigger asChild>{icon}</TooltipTrigger>
           <TooltipContent>
             <p>{label}</p>
           </TooltipContent>
