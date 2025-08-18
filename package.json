@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://chandruthehacker.github.io/sensiem-sample-page",
+  "homepage": "https://chandruthehacker.github.io/SenSIEM-sample-page",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
