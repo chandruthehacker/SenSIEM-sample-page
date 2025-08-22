@@ -64,6 +64,6 @@ Here’s how it looks in action:
 <div align="center">
 
 💡 *SenSIEM is a lightweight demo project showcasing a SIEM-style log viewer UI.*  
-Built with ❤️ by **[Your Name]**
+Built with ❤️ by **Chandraprakash C**
 
 </div>
